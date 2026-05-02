@@ -98,14 +98,14 @@ class FileViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteFile(path: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             if (repository.deleteFile(path)) loadDirectory(currentPath)
             else _uiState.update { it.copy(errorMessage = "Failed to delete file") }
         }
     }
 
     fun renameFile(oldPath: String, newName: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val ok = repository.renameFile(oldPath, newName)
             _uiState.update { it.copy(showRenameDialog = false, fileToRename = null) }
             if (ok) loadDirectory(currentPath)
@@ -114,7 +114,7 @@ class FileViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun createFolder(folderName: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val ok = repository.createFolder(currentPath, folderName)
             _uiState.update { it.copy(showCreateFolderDialog = false) }
             if (ok) loadDirectory(currentPath)
@@ -123,7 +123,7 @@ class FileViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun extractZip(zipPath: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(extractionProgress = 0) }
             val result = ZipUtils.extractZip(zipPath) { progress ->
                 _uiState.update { it.copy(extractionProgress = progress) }
