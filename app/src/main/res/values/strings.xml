@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Innugo</string>
+    <string name="quick_access">Quick Access</string>
+    <string name="recent_files">Recent Files</string>
+    <string name="storage">Storage</string>
+    <string name="empty_folder">This folder is empty</string>
+    <string name="permission_required">Permission Required</string>
+    <string name="permission_rationale">Innugo needs storage access to show your files. Please grant the permission in Settings.</string>
+</resources>
