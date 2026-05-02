@@ -3,6 +3,9 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Allow CI to inject an incrementing versionCode via -PversionCode=<N>
+val ciVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
+
 android {
     namespace = "com.innugo.files"
     compileSdk = 34
@@ -11,7 +14,7 @@ android {
         applicationId = "com.innugo.files"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
+        versionCode = ciVersionCode
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

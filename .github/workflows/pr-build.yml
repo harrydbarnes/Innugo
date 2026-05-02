@@ -1,0 +1,120 @@
+name: PR Build
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # needed to post/update the PR comment
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+          cache-read-only: false
+
+      # ── Optional: restore a consistent debug keystore from secrets ──────
+      # Store a base64-encoded debug keystore in the repo secret
+      # DEBUG_KEYSTORE_BASE64 so every build is signed with the same key.
+      # Without this secret, a fresh keystore is generated per runner and
+      # APKs from different builds will NOT be upgradeable over each other.
+      - name: Restore debug keystore
+        if: ${{ env.DEBUG_KEYSTORE_BASE64 != '' }}
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p "$HOME/.android"
+          echo "$DEBUG_KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+
+      # Use the GitHub Actions run number as the versionCode so each build
+      # reports a higher version and Android treats it as an upgrade.
+      - name: Build debug APK
+        run: |
+          gradle assembleDebug \
+            -PversionCode=${{ github.run_number }} \
+            --no-daemon \
+            --stacktrace
+
+      - name: Upload APK artifact
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: innugo-pr${{ github.event.pull_request.number }}-run${{ github.run_number }}-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
+
+      # Post (or update) a single bot comment on the PR with the download link.
+      - name: Post APK comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- innugo-apk-build-comment -->';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+
+            const body = [
+              marker,
+              '## 📦 Debug APK',
+              '',
+              `A fresh debug APK has been built for this PR.`,
+              '',
+              `**[⬇️ Download APK](${runUrl})** — open the link, scroll to **Artifacts** and download \`innugo-pr${{ github.event.pull_request.number }}-run${{ github.run_number }}-debug\`.`,
+              '',
+              '| Property | Value |',
+              '|---|---|',
+              `| Version Code | \`${{ github.run_number }}\` |`,
+              `| Commit | \`${sha}\` |`,
+              `| Build run | [#${{ github.run_number }}](${runUrl}) |`,
+              `| Artifact expires | 14 days |`,
+              '',
+              '### How to install / upgrade',
+              '1. Download and unzip the artifact.',
+              '2. Transfer `app-debug.apk` to your Android device.',
+              '3. Open the file on the device to install (enable *Install unknown apps* for your file manager if prompted).',
+              '4. Subsequent PR builds will have a higher `versionCode` so Android will treat them as upgrades — **no uninstall needed**, provided all builds are signed with the same key.',
+              '',
+              '> ⚠️ **Consistent signing**: to guarantee upgradeability across CI runners, add a `DEBUG_KEYSTORE_BASE64` repository secret (base64-encoded `~/.android/debug.keystore`). Without it, each runner may generate a different debug key and Android will reject the upgrade.',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
