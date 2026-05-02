@@ -28,7 +28,7 @@ data class FileBrowserUiState(
     val isLoading: Boolean = true,
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
-    /** Extraction progress: -1 = idle (not extracting), 0–100 = active percentage */
+    /** Extraction progress: -1 = idle (not extracting), 0-100 = active percentage */
     val extractionProgress: Int = -1,
     val showDeleteZipDialog: Boolean = false,
     val zipPathToDelete: String = "",

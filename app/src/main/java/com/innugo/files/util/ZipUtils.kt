@@ -46,6 +46,7 @@ object ZipUtils {
                     if (destFileCanonical != destCanonical &&
                         !destFileCanonical.startsWith(destCanonical + File.separator)
                     ) {
+                        zis.closeEntry()
                         entry = zis.nextEntry
                         continue
                     }

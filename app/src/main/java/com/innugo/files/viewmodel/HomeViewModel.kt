@@ -40,9 +40,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadData() {
         viewModelScope.launch {
             // Use .first() so expensive I/O only runs once on initial load.
-            // Pin/unpin changes are reflected via togglePin() calling refresh() indirectly
-            // because togglePinnedFolder updates the DataStore and the UI reacts via
-            // the pinnedFolders Flow observed in the QuickAccessTile's pin state.
+            // Pin/unpin changes are applied by togglePin() which directly calls refresh()
+            // afterwards to rebuild the quick-access tiles with the updated pin state.
             val pinnedPaths = prefsManager.pinnedFolders.first()
             val folders = withContext(Dispatchers.IO) { buildQuickAccessFolders(pinnedPaths) }
             val recent = withContext(Dispatchers.IO) { repository.getRecentFiles(10) }
