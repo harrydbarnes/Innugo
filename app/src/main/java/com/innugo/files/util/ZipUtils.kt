@@ -40,9 +40,12 @@ object ZipUtils {
                 while (entry != null) {
                     val destFile = File(destFolder, entry.name)
 
-                    // Zip-slip prevention: reject any entry whose resolved path
-                    // is not strictly inside the destination folder.
-                    if (!destFile.canonicalPath.startsWith(destCanonical + File.separator)) {
+                    // Zip-slip prevention: reject any entry whose resolved path is not
+                    // the destination folder itself or strictly inside it.
+                    val destFileCanonical = destFile.canonicalPath
+                    if (destFileCanonical != destCanonical &&
+                        !destFileCanonical.startsWith(destCanonical + File.separator)
+                    ) {
                         entry = zis.nextEntry
                         continue
                     }

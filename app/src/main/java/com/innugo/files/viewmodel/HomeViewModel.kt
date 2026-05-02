@@ -39,19 +39,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadData() {
         viewModelScope.launch {
-            prefsManager.pinnedFolders.collect { pinnedPaths ->
-                val folders = withContext(Dispatchers.IO) { buildQuickAccessFolders(pinnedPaths) }
-                val recent = withContext(Dispatchers.IO) { repository.getRecentFiles(10) }
-                val (used, total) = withContext(Dispatchers.IO) { repository.getStorageInfo() }
-                _uiState.update {
-                    it.copy(
-                        quickAccessFolders = folders,
-                        recentFiles = recent,
-                        usedStorage = used,
-                        totalStorage = total,
-                        isLoading = false
-                    )
-                }
+            // Use .first() so expensive I/O only runs once on initial load.
+            // Pin/unpin changes are reflected via togglePin() calling refresh() indirectly
+            // because togglePinnedFolder updates the DataStore and the UI reacts via
+            // the pinnedFolders Flow observed in the QuickAccessTile's pin state.
+            val pinnedPaths = prefsManager.pinnedFolders.first()
+            val folders = withContext(Dispatchers.IO) { buildQuickAccessFolders(pinnedPaths) }
+            val recent = withContext(Dispatchers.IO) { repository.getRecentFiles(10) }
+            val (used, total) = withContext(Dispatchers.IO) { repository.getStorageInfo() }
+            _uiState.update {
+                it.copy(
+                    quickAccessFolders = folders,
+                    recentFiles = recent,
+                    usedStorage = used,
+                    totalStorage = total,
+                    isLoading = false
+                )
             }
         }
     }
@@ -75,7 +78,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun togglePin(path: String) {
-        viewModelScope.launch { prefsManager.togglePinnedFolder(path) }
+        viewModelScope.launch {
+            prefsManager.togglePinnedFolder(path)
+            // Rebuild quick-access tiles so the pin icon updates immediately.
+            refresh()
+        }
     }
 
     fun refresh() {
