@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="indigo_primary">#3F51B5</color>
+    <color name="indigo_container">#C5CAE9</color>
+    <color name="indigo_background">#F5F5FF</color>
+    <color name="dark_navy_primary">#7986CB</color>
+    <color name="dark_navy_container">#1A237E</color>
+    <color name="dark_navy_background">#0D1B2A</color>
+    <color name="dark_navy_surface">#0A1628</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+</resources>
