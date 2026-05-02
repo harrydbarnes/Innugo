@@ -29,7 +29,6 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.4'
           cache-read-only: false
 
       # ── Optional: restore a consistent debug keystore from secrets ──────
@@ -49,7 +48,8 @@ jobs:
       # reports a higher version and Android treats it as an upgrade.
       - name: Build debug APK
         run: |
-          gradle assembleDebug \
+          chmod +x ./gradlew
+          ./gradlew assembleDebug \
             -PversionCode=${{ github.run_number }} \
             --no-daemon \
             --stacktrace
