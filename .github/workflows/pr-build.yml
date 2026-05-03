@@ -3,7 +3,7 @@ name: PR Build
 on:
   pull_request:
     branches: [ main ]
-    types: [ opened, synchronize, reopened ]
+    types: [ opened, synchronize, reopened, edited, ready_for_review ]
 
 concurrency:
   group: pr-build-${{ github.event.pull_request.number }}
@@ -12,6 +12,7 @@ concurrency:
 jobs:
   build:
     name: Build Debug APK
+    if: ${{ github.event.action != 'edited' || github.event.changes.base.ref != '' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write  # needed to post/update the PR comment
